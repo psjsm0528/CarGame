@@ -1,74 +1,57 @@
 ﻿using UnityEngine;
-using System.Collections;
+using UnityEngine.AI;
 
-public class AICarMove : MonoBehaviour {
+public class AICarMove : MonoBehaviour
+{
+    private NavMeshAgent agent;
 
-	[SerializeField]
-	GameObject targetAICar;
-	[SerializeField]
-	GameObject[] targetNavMeshObjects;
-	int targetNavMeshObjectCounts;
-	int targetNavMeshObjectNow;
+    void Start()
+    {
+        agent = GetComponent<NavMeshAgent>();
+    }
 
-	Vector3 startPos;
-	Vector3 startRot;
+    void Update()
+    {
+        // NavMeshAgent가 활성화되어 있고 NavMesh 위에 있을 때만 접근
+        if (agent != null && agent.enabled && agent.isOnNavMesh)
+        {
+            float remainingDistance = agent.remainingDistance;
 
-	UnityEngine.AI.NavMeshAgent navMeshAgentCompornent;
-	const float CAR_SPEED_MAX = 1.0f;
+            // 목적지 도착 확인 (예시)
+            if (!agent.pathPending && remainingDistance <= agent.stoppingDistance)
+            {
+                Debug.Log($"{name}: 목적지 도착!");
+                // 도착 시 실행할 코드 (예: 다음 목표 설정)
+            }
+        }
+        else
+        {
+            Debug.LogWarning($"{name}: NavMeshAgent is not on a NavMesh or not ready!");
+        }
+    }
 
-	// Use this for initialization
-	void Start () {
+    // 🟩 외부에서 호출할 초기화 함수
+    public void InitAICar()
+    {
+        if (agent == null)
+            agent = GetComponent<NavMeshAgent>();
 
-		navMeshAgentCompornent = this.GetComponent<UnityEngine.AI.NavMeshAgent>();
-		startPos = targetNavMeshObjects[0].transform.localPosition;
-		startRot = targetNavMeshObjects[0].transform.localEulerAngles;
-		targetNavMeshObjectCounts = targetNavMeshObjects.Length -1;
+        if (agent == null)
+        {
+            Debug.LogError($"{name}: NavMeshAgent 컴포넌트를 찾을 수 없습니다!");
+            return;
+        }
 
-	}
-
-	public void InitAICar () {
-
-		navMeshAgentCompornent.speed = 0.0f;
-		targetAICar.GetComponent<Animation>().Play("00_Stop");
-		StartCoroutine(startCar(3.0f));
-
-	}
-
-	IEnumerator startCar (float startDelayTime) {
-
-		navMeshAgentCompornent.speed = 0.0f;
-		targetAICar.GetComponent<Animation>().Play("00_Stop");
-		yield return new WaitForSeconds(startDelayTime);
-
-		// Set destination
-		targetNavMeshObjectNow = 1;
-		navMeshAgentCompornent.SetDestination(targetNavMeshObjects[targetNavMeshObjectNow].transform.localPosition);
-		this.transform.localPosition = startPos;
-		this.transform.localEulerAngles = startRot;
-
-		yield return new WaitForSeconds(0.5f);
-		navMeshAgentCompornent.speed = CAR_SPEED_MAX;
-		targetAICar.GetComponent<Animation>().Play("01_Run");
-
-	}
-
-	
-	// Update is called once per frame
-	void Update () {
-
-		if (navMeshAgentCompornent.remainingDistance < 0.1f)
-		{
-			targetNavMeshObjectNow ++;
-			if (targetNavMeshObjectNow <= targetNavMeshObjectCounts)
-			{
-				navMeshAgentCompornent.SetDestination(targetNavMeshObjects[targetNavMeshObjectNow].transform.localPosition);
-			}
-			else if (targetNavMeshObjectNow >  targetNavMeshObjectCounts)
-			{
-				targetNavMeshObjectNow = 1;
-				navMeshAgentCompornent.SetDestination(targetNavMeshObjects[targetNavMeshObjectNow].transform.localPosition);
-			}
-		}
-	
-	}
+        // NavMesh 위에 제대로 올라가 있는지 확인
+        if (agent.enabled && agent.isOnNavMesh)
+        {
+            agent.isStopped = false;      // 멈춤 해제
+            agent.ResetPath();            // 기존 경로 초기화
+            Debug.Log($"{name}: AI Car Initialized successfully!");
+        }
+        else
+        {
+            Debug.LogWarning($"{name}: InitAICar() 실패 — NavMesh 위에 있지 않음.");
+        }
+    }
 }
